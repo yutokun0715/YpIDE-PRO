@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>YpIDE Editor</title>
+
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,sans-serif;}
+
+body{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:#f2f5f9;
+  color:#222;
+  overflow:hidden;
+  touch-action:none;
+}
+
+/* ===== 上部ナビバー ===== */
+
+#topBar{
+  display:flex;
+  align-items:center;
+  padding:10px 20px;
+  background:linear-gradient(to right,#87CEFA,#90EE90);
+  flex-shrink:0;
+  gap:10px;
+}
+
+#logo{
+  font-size:22px;
+  font-weight:bold;
+  margin-right:20px;
+  cursor:pointer;
+}
+
+.topBtn{
+  padding:6px 14px;
+  border:none;
+  border-radius:6px;
+  background:white;
+  cursor:pointer;
+}
+.topBtn:hover{background:#eee;}
+
+/* ===== メインレイアウト ===== */
+
+#mainWrapper{
+  flex:1;
+  display:flex;
+  min-height:0;
+}
+
+/* ===== 編集エリア ===== */
+
+#editorArea{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#editorTitle{
+  padding:10px;
+  border-bottom:1px solid #ddd;
+  background:#fafafa;
+  font-weight:bold;
+}
+
+#editorContent{
+  flex:1;
+  display:flex;
+  min-height:0;
+}
+
+#blockPalette{
+  width:160px;
+  border-right:1px solid #ddd;
+  padding:10px;
+  background:#f9fbff;
+  overflow:auto;
+}
+
+.paletteBlock{
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:6px;
+  color:white;
+  cursor:grab;
+  text-align:center;
+  touch-action:none;
+}
+
+.start{background:#4caf50;}
+.move{background:#ff9800;}
+.turn{background:#9c27b0;}
+.wait{background:#2196f3;}
+.repeat{background:#f44336;}
+
+#workspace{
+  flex:1;
+  position:relative;
+  background:white;
+  overflow:auto;
+  padding:20px;
+  min-height:0;
+}
+
+.block{
+  position:absolute;
+  padding:10px 15px;
+  border-radius:8px;
+  color:white;
+  cursor:grab;
+  touch-action:none;
+}
+
+.block input{
+  width:40px;
+  border:none;
+  background:rgba(255,255,255,0.3);
+  color:white;
+  text-align:center;
+  outline:none;
+}
+
+/* ===== C型Repeat ===== */
+
+.repeatBlock{
+  background:#f44336;
+  border-radius:10px;
+  min-width:160px;
+  padding:0;
+}
+
+.repeatHeader{
+  padding:10px;
+}
+
+.repeatInner{
+  background:#ffe5e5;
+  margin:0 10px;
+  min-height:40px;
+  border-left:4px solid #f44336;
+  border-right:4px solid #f44336;
+  padding:10px;
+}
+
+.repeatFooter{
+  height:20px;
+  margin:0 10px 10px 10px;
+  border-bottom:4px solid #f44336;
+  border-left:4px solid #f44336;
+  border-right:4px solid #f44336;
+  border-radius:0 0 10px 10px;
+}
+
+/* ===== 右パネル ===== */
+
+#rightPanel{
+  width:420px;
+  border-left:1px solid #ddd;
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+}
+
+#stage{
+  height:260px;
+  border-bottom:1px solid #ddd;
+  flex-shrink:0;
+}
+
+#stage canvas{
+  width:100%;
+  height:100%;
+  background:white;
+}
+
+#runBtn{
+  padding:14px;
+  background:#4caf50;
+  color:white;
+  text-align:center;
+  cursor:pointer;
+  flex-shrink:0;
+}
+</style>
+</head>
+
+<body>
+
+<div id="topBar">
+  <div id="logo">Yp IDE</div>
+  <button class="topBtn" id="newBtn">新規作成</button>
+  <button class="topBtn" id="saveBtn">💾 保存</button>
+  <button class="topBtn" id="loadBtn">📂 読み込み</button>
+  <input type="file" id="fileInput" style="display:none">
+</div>
+
+<div id="mainWrapper">
+
+<div id="editorArea">
+<div id="editorTitle">ブロック編集</div>
+<div id="editorContent">
+
+<div id="blockPalette">
+<div class="paletteBlock start" data-type="start">スタート</div>
+<div class="paletteBlock move" data-type="move">動く 10</div>
+<div class="paletteBlock turn" data-type="turn">回る 15</div>
+<div class="paletteBlock wait" data-type="wait">待つ 1</div>
+<div class="paletteBlock repeat" data-type="repeat">繰り返す 5</div>
+</div>
+
+<div id="workspace"></div>
+
+</div>
+</div>
+
+<div id="rightPanel">
+  <div id="stage"><canvas id="canvas"></canvas></div>
+  <div id="runBtn">▶ 実行</div>
+</div>
+
+</div>
+
+<script>
+
+/* ===== ナビ ===== */
+
+document.getElementById("logo").onclick=()=>{
+  window.location.href="Home.html";
+};
+
+document.getElementById("newBtn").onclick=()=>{
+  if(confirm("現在の内容をリセットしますか？")){
+    location.reload();
+  }
+};
+
+/* ===== 保存 ===== */
+
+document.getElementById("saveBtn").onclick=async()=>{
+  const zip=new JSZip();
+  const data=serializeBlocks();
+  zip.file("project.json",JSON.stringify(data,null,2));
+  const content=await zip.generateAsync({type:"blob"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(content);
+  a.download="project.zip";
+  a.click();
+};
+
+/* ===== 読み込み ===== */
+
+document.getElementById("loadBtn").onclick=()=>{
+  document.getElementById("fileInput").click();
+};
+
+document.getElementById("fileInput").addEventListener("change",async(e)=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const zip=await JSZip.loadAsync(file);
+  const json=await zip.file("project.json").async("string");
+  const data=JSON.parse(json);
+  loadBlocks(data);
+});
+
+/* ===== 以下エンジン完全保持 ===== */
+
+const workspace=document.getElementById("workspace");
+const palette=document.querySelectorAll(".paletteBlock");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+let sprite={x:150,y:100,angle:0};
+
+function resize(){
+  canvas.width=canvas.clientWidth;
+  canvas.height=canvas.clientHeight;
+  draw();
+}
+window.addEventListener("resize",resize);
+resize();
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(sprite.x,sprite.y);
+  ctx.rotate(sprite.angle*Math.PI/180);
+  ctx.fillStyle="orange";
+  ctx.fillRect(-20,-20,40,40);
+  ctx.restore();
+}
+
+palette.forEach(p=>{
+  p.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    const block=createBlock(p.dataset.type);
+    block.style.left="200px";
+    block.style.top="50px";
+    startDrag(block,e);
+  });
+});
+
+function createBlock(type){
+  const block=document.createElement("div");
+  block.className="block "+type;
+  block.dataset.type=type;
+  block.nextBlock=null;
+  block.childrenBlocks=[];
+
+  if(type==="start"){ block.style.background="#4caf50"; block.textContent="スタート"; }
+  if(type==="move"){ block.style.background="#ff9800"; block.innerHTML="動く <input value='10'>"; }
+  if(type==="turn"){ block.style.background="#9c27b0"; block.innerHTML="回る <input value='15'>"; }
+  if(type==="wait"){ block.style.background="#2196f3"; block.innerHTML="待つ <input value='1'>"; }
+
+  if(type==="repeat"){
+    block.classList.add("repeatBlock");
+    block.innerHTML=`
+      <div class="repeatHeader">
+        繰り返す <input value="5">
+      </div>
+      <div class="repeatInner"></div>
+      <div class="repeatFooter"></div>
+    `;
+    block.innerContainer=block.querySelector(".repeatInner");
+  }
+
+  workspace.appendChild(block);
+  enableDrag(block);
+  return block;
+}
+
+function enableDrag(block){
+  block.addEventListener("pointerdown",e=>startDrag(block,e));
+}
+
+function startDrag(block,e){
+
+  if(block.parentElement && block.parentElement.classList.contains("repeatInner")){
+    workspace.appendChild(block);
+    block.style.position="absolute";
+  }
+
+  const rect=workspace.getBoundingClientRect();
+  let offsetX=e.clientX-rect.left-(parseInt(block.style.left)||0);
+  let offsetY=e.clientY-rect.top-(parseInt(block.style.top)||0);
+
+  block.setPointerCapture(e.pointerId);
+
+  function move(ev){
+    block.style.left=(ev.clientX-rect.left-offsetX)+"px";
+    block.style.top=(ev.clientY-rect.top-offsetY)+"px";
+  }
+
+  function up(){
+    block.releasePointerCapture(e.pointerId);
+    block.removeEventListener("pointermove",move);
+    block.removeEventListener("pointerup",up);
+    snap(block);
+  }
+
+  block.addEventListener("pointermove",move);
+  block.addEventListener("pointerup",up);
+}
+
+function snap(active){
+
+  active.style.background="";
+
+  workspace.querySelectorAll(".block").forEach(b=>{
+    if(b===active) return;
+
+    let ax=parseInt(active.style.left);
+    let ay=parseInt(active.style.top);
+    let bx=parseInt(b.style.left);
+    let by=parseInt(b.style.top);
+
+    let bHeight=b.offsetHeight;
+
+    if(Math.abs(ax-bx)<30 && Math.abs(ay-(by+bHeight))<20){
+      active.style.position="absolute";
+      active.style.left=bx+"px";
+      active.style.top=(by+bHeight)+"px";
+      b.nextBlock=active;
+      active.style.background="dodgerblue";
+    }
+
+    if(b.dataset.type==="repeat"){
+      let innerRect=b.innerContainer.getBoundingClientRect();
+      let workRect=workspace.getBoundingClientRect();
+
+      if(
+        ax+workRect.left > innerRect.left &&
+        ax+workRect.left < innerRect.right &&
+        ay+workRect.top > innerRect.top &&
+        ay+workRect.top < innerRect.bottom
+      ){
+        b.innerContainer.appendChild(active);
+        active.style.position="relative";
+        active.style.left="0px";
+        active.style.top="0px";
+        b.childrenBlocks.push(active);
+        active.style.background="dodgerblue";
+      }
+    }
+  });
+}
+
+document.getElementById("runBtn").onclick=async()=>{
+  let start=[...workspace.querySelectorAll(".block")]
+    .find(b=>b.dataset.type==="start");
+  if(!start) return;
+  await runChain(start.nextBlock);
+};
+
+async function runChain(block){
+  while(block){
+    await execute(block);
+    block=block.nextBlock;
+  }
+}
+
+async function execute(b){
+  if(!b) return;
+  let type=b.dataset.type;
+
+  if(type==="move"){
+    let v=parseFloat(b.querySelector("input").value)||0;
+    sprite.x+=Math.cos(sprite.angle*Math.PI/180)*v;
+    sprite.y+=Math.sin(sprite.angle*Math.PI/180)*v;
+    draw(); await sleep(300);
+  }
+
+  if(type==="turn"){
+    let v=parseFloat(b.querySelector("input").value)||0;
+    sprite.angle+=v;
+    draw(); await sleep(300);
+  }
+
+  if(type==="wait"){
+    let v=parseFloat(b.querySelector("input").value)||0;
+    await sleep(v*1000);
+  }
+
+  if(type==="repeat"){
+    let count=parseInt(b.querySelector("input").value)||1;
+    for(let i=0;i<count;i++){
+      for(let child of b.childrenBlocks){
+        await runChain(child);
+      }
+    }
+  }
+}
+
+function sleep(ms){
+  return new Promise(r=>setTimeout(r,ms));
+}
+
+/* ===== 保存用シリアライズ ===== */
+
+function serializeBlocks(){
+  const blocks=[...workspace.children];
+  return blocks.map(b=>serializeBlock(b));
+}
+
+function serializeBlock(b){
+  let obj={
+    type:b.dataset.type,
+    x:parseInt(b.style.left)||0,
+    y:parseInt(b.style.top)||0,
+    value:null,
+    children:[],
+    next:null
+  };
+
+  if(b.querySelector("input")){
+    obj.value=b.querySelector("input").value;
+  }
+
+  if(b.dataset.type==="repeat"){
+    obj.children=b.childrenBlocks.map(child=>serializeBlock(child));
+  }
+
+  if(b.nextBlock){
+    obj.next=serializeBlock(b.nextBlock);
+  }
+
+  return obj;
+}
+
+/* ===== 読み込み復元 ===== */
+
+function loadBlocks(data){
+  workspace.innerHTML="";
+  data.forEach(obj=>{
+    createFromData(obj);
+  });
+}
+
+function createFromData(obj,parentRepeat=null){
+
+  const block=createBlock(obj.type);
+
+  if(parentRepeat){
+    parentRepeat.innerContainer.appendChild(block);
+    block.style.position="relative";
+    parentRepeat.childrenBlocks.push(block);
+  }else{
+    block.style.left=obj.x+"px";
+    block.style.top=obj.y+"px";
+  }
+
+  if(obj.value && block.querySelector("input")){
+    block.querySelector("input").value=obj.value;
+  }
+
+  if(obj.children){
+    obj.children.forEach(child=>{
+      createFromData(child,block);
+    });
+  }
+
+  if(obj.next){
+    const nextBlock=createFromData(obj.next);
+    block.nextBlock=nextBlock;
+  }
+
+  return block;
+}
+
+</script>
+</body>
+</html>
+
