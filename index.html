@@ -16,6 +16,7 @@ body {
     align-items: center;
     padding: 10px 20px;
     background: linear-gradient(to right, #87CEFA, #90EE90);
+    flex-wrap: wrap;
 }
 
 /* タイトル */
@@ -34,6 +35,81 @@ body {
     background-color: white;
     cursor: pointer;
     transition: 0.2s;
+    margin-right: 10px;
+    margin-top: 5px;
+}
+
+.top-btn:hover {
+    background-color: #eeeeee;
+}
+
+/* ラベル部分 */
+.label {
+    margin: 50px auto;
+    width: 80%;
+    padding: 30px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(to right, purple, blue);
+    border-radius: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="title">YpIDE PRO</div>
+
+    <button class="top-btn" onclick="openEditor()">作る</button>
+
+    <button class="top-btn" onclick="openProjects()">📁 プロジェクト</button>
+
+    <button class="top-btn" onclick="openChaat()">💬 共有Chaat</button>
+
+    <button class="top-btn" onclick="openProfile()">👤 製作者プロフィール</button>
+
+    <button class="top-btn" onclick="openCredit()">🏷 クレジット</button>
+
+    <button class="top-btn" onclick="openGuidelines()">利用するにあたって</button>
+</div>
+
+<div class="label">
+    Scratchを参考にしたビジュアルプログラミングツールです!!<br>
+    現在制作中ですので少々お待ちください!!
+</div>
+
+<script>
+function openEditor() {
+    window.location.href = "Editor.html";
+}
+
+function openGuidelines() {
+    window.location.href = "Guidelines.html";
+}
+
+function openProjects() {
+    window.location.href = "Projects.html";
+}
+
+function openChaat() {
+    window.open("https://c.kuku.lu/mhp75jfe", "_blank");
+}
+
+/* 👤 製作者プロフィール */
+function openProfile() {
+    window.open("https://scratch.mit.edu/users/yupiekunAnimation/", "_blank");
+}
+
+/* 🏷 クレジットページ */
+function openCredit() {
+    window.location.href = "Credit.html";
+}
+</script>
+
+</body>
+</html>
     margin-right: 10px;
 }
 
