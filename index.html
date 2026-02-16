@@ -15,7 +15,7 @@ body {
     display: flex;
     align-items: center;
     padding: 10px 20px;
-    background: linear-gradient(to right, #87CEFA, #90EE90); /* 水色→黄緑 */
+    background: linear-gradient(to right, #87CEFA, #90EE90);
 }
 
 /* タイトル */
@@ -50,7 +50,7 @@ body {
     font-size: 28px;
     font-weight: bold;
     color: white;
-    background: linear-gradient(to right, purple, blue); /* 紫→青 */
+    background: linear-gradient(to right, purple, blue);
     border-radius: 15px;
 }
 </style>
@@ -61,6 +61,13 @@ body {
     <div class="title">YpIDE PRO</div>
 
     <button class="top-btn" onclick="openEditor()">作る</button>
+
+    <!-- 📁 保存されたプロジェクト -->
+    <button class="top-btn" onclick="openProjects()">📁 プロジェクト</button>
+
+    <!-- 💬 プロジェクト共有Chaat -->
+    <button class="top-btn" onclick="openChaat()">💬 共有Chaat</button>
+
     <button class="top-btn" onclick="openGuidelines()">利用するにあたって</button>
 </div>
 
@@ -77,8 +84,17 @@ function openEditor() {
 function openGuidelines() {
     window.location.href = "Guidelines.html";
 }
+
+/* 📁 プロジェクト一覧（まだ未実装） */
+function openProjects() {
+    window.location.href = "Projects.html";
+}
+
+/* 💬 Chaat共有ページ */
+function openChaat() {
+    window.open("https://c.kuku.lu/mhp75jfe", "_blank");
+}
 </script>
 
 </body>
 </html>
-
