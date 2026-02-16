@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>YpIDE PRO</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: white;
+}
+
+/* 上のバー */
+.topbar {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: linear-gradient(to right, #87CEFA, #90EE90); /* 水色→黄緑 */
+}
+
+/* タイトル */
+.title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-right: 20px;
+}
+
+/* ボタン共通 */
+.top-btn {
+    padding: 8px 16px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-right: 10px;
+}
+
+.top-btn:hover {
+    background-color: #eeeeee;
+}
+
+/* ラベル部分 */
+.label {
+    margin: 50px auto;
+    width: 80%;
+    padding: 30px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(to right, purple, blue); /* 紫→青 */
+    border-radius: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="title">YpIDE PRO</div>
+
+    <button class="top-btn" onclick="openEditor()">作る</button>
+    <button class="top-btn" onclick="openGuidelines()">利用するにあたって</button>
+</div>
+
+<div class="label">
+    Scratchを参考にしたビジュアルプログラミングツールです!!<br>
+    現在制作中ですので少々お待ちください!!
+</div>
+
+<script>
+function openEditor() {
+    window.location.href = "Editor.html";
+}
+
+function openGuidelines() {
+    window.location.href = "Guidelines.html";
+}
+</script>
+
+</body>
+</html>
+
